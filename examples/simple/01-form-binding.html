@@ -134,7 +134,7 @@
   </div>
 
   <!-- CDN Version -->
-  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js?v=2"></script>
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@master/silcrow.runtime.js"></script>
   <script>
     // Initial empty state
     let formData = {
@@ -146,9 +146,9 @@
     };
 
     // Initialize form
-    Silcrow.patch(formData, '#userForm');
-    Silcrow.patch(formData, '.preview');
-
+    // Silcrow.patch(formData, '#userForm');
+    // Silcrow.patch(formData, '.preview');
+    Silcrow.patch(formData, 'body');
     // Load draft data
     function loadDraft() {
       formData = {
@@ -158,16 +158,18 @@
           bio: 'Full-stack developer passionate about minimalist tools and elegant APIs.'
         }
       };
-      Silcrow.patch(formData, '#userForm'); // ← Load into inputs
-      Silcrow.patch(formData, '.preview');   // ← Update preview
+      // Silcrow.patch(formData, '#userForm'); // ← Load into inputs
+      // Silcrow.patch(formData, '.preview');   // ← Update preview
+      Silcrow.patch(formData, 'body');
     }
 
     function clearForm() {
       formData = {
         user: {name: '', email: '', bio: ''}
       };
-      Silcrow.patch(formData, '#userForm'); // ← Add # for ID selector
-      Silcrow.patch(formData, '.preview');   // ← Also clear preview
+      //  Silcrow.patch(formData, '#userForm'); // ← Add # for ID selector
+      // Silcrow.patch(formData, '.preview');   // ← Also clear preview
+      Silcrow.patch(formData, 'body');
     }
 
     // Add to your form example
@@ -183,7 +185,7 @@
         }
       };
 
-      Silcrow.patch(currentData, '.preview');
+      Silcrow.patch(currentData, 'body');
 
       const end = performance.now();
       console.log(`Patch time: ${(end - start).toFixed(2)}ms`); // ← Parentheses, not backticks
