@@ -1,15 +1,29 @@
 # Silcrow
 
-Minimalist DOM patching library. Give it JSON, it updates your DOM.
+A minimalist DOM patching library. Give it JSON, and it patches the DOM.
+
+## Why Silcrow?
+
+- **No Virtual DOM** - Direct DOM patching with O(1) lookups
+- **Tiny** - ~4KB minified + gzipped
+- **Simple API** - `Silcrow.patch(data, root)` and you're done
+- **Automatic Cleanup** - WeakMap-based lifecycle management
+- **Library Isolation** - Perfect for third-party widgets and micro-frontends
+- **Zero Dependencies** - Pure JavaScript, no build step required
+
+Silcrow decouples your DOM structure from backend logic. Your HTML defines the bindings, your data drives the updates.
 
 ## Install
-
 ```bash
 npm install silcrow
 ```
 
-## Usage
+Or use CDN:
+```html
+<script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow_runtime.js"></script>
+```
 
+## Usage
 ```javascript
 import 'silcrow';
 
@@ -34,7 +48,6 @@ Clears cache for root. Next patch rebuilds bindings.
 ### `Silcrow.stream(root)`
 
 Returns batched update function for high-frequency patches.
-
 ```javascript
 const update = Silcrow.stream("#app");
 update({ count: 1 }); // batched
@@ -47,7 +60,6 @@ update({ count: 2 }); // batched
 ### `s-bind`
 
 Binds element to data path.
-
 ```html
 <!-- Text content -->
 <span s-bind="user.name"></span>
@@ -61,7 +73,6 @@ Binds element to data path.
 ### `s-list`
 
 Renders array. Items need `key` field.
-
 ```html
 <ul s-list="todos">
   <template>
@@ -69,7 +80,6 @@ Renders array. Items need `key` field.
   </template>
 </ul>
 ```
-
 ```javascript
 Silcrow.patch({
   todos: [
@@ -84,7 +94,6 @@ Local bindings use `.field` syntax (dot prefix).
 ### `s-template`
 
 Specifies template ID for list.
-
 ```html
 <div s-list="items" s-template="item-tpl"></div>
 <template id="item-tpl">
@@ -99,7 +108,6 @@ Auto-added to list items. Contains item key.
 ### `s-debug`
 
 Add to `<body>` for warnings and errors.
-
 ```html
 <body s-debug>
 ```
@@ -109,23 +117,21 @@ Add to `<body>` for warnings and errors.
 ### `silcrow:patched`
 
 Fired after each patch (unless `silent: true`).
-
 ```javascript
 root.addEventListener('silcrow:patched', (e) => {
   console.log(e.detail.paths); // updated paths
 });
 ```
-# Integration Examples
 
-## Third-Party APIs
+## Integration Examples
 
+### Third-Party APIs
 ```javascript
 // Fetch GitHub user
 fetch('https://api.github.com/users/octocat')
   .then(r => r.json())
   .then(data => Silcrow.patch(data, '#profile'));
 ```
-
 ```html
 <div id="profile">
   <img s-bind="avatar_url:src">
@@ -135,8 +141,7 @@ fetch('https://api.github.com/users/octocat')
 </div>
 ```
 
-## Server-Sent Events
-
+### Server-Sent Events
 ```javascript
 const stream = Silcrow.stream('#dashboard');
 const events = new EventSource('/api/metrics');
@@ -145,7 +150,6 @@ events.onmessage = (e) => {
   stream(JSON.parse(e.data));
 };
 ```
-
 ```html
 <div id="dashboard">
   <span s-bind="cpu:textContent">0</span>% CPU
@@ -153,8 +157,7 @@ events.onmessage = (e) => {
 </div>
 ```
 
-## WebSocket
-
+### WebSocket
 ```javascript
 const ws = new WebSocket('wss://api.example.com');
 const update = Silcrow.stream('#live-feed');
@@ -164,7 +167,6 @@ ws.onmessage = (e) => {
   update(data);
 };
 ```
-
 ```html
 <ul id="live-feed" s-list="messages">
   <template>
@@ -176,10 +178,9 @@ ws.onmessage = (e) => {
 </ul>
 ```
 
-## HTMX
+### HTMX
 
 HTMX handles HTML, Silcrow patches JSON endpoints.
-
 ```html
 <!-- HTMX loads HTML fragment -->
 <button hx-get="/widgets/chart" hx-target="#chart">
@@ -205,10 +206,9 @@ document.body.addEventListener('htmx:afterSettle', (e) => {
 </script>
 ```
 
-## Alpine.js
+### Alpine.js
 
 Use Alpine for interactions, Silcrow for data binding.
-
 ```html
 <div x-data="{ open: false }" id="app">
   <!-- Alpine handles UI state -->
@@ -229,10 +229,9 @@ fetch('/api/product/123')
 </script>
 ```
 
-## Your JSON Schema
+### Your JSON Schema
 
 Direct mapping, no transforms needed.
-
 ```javascript
 const appData = {
   user: {
@@ -253,7 +252,6 @@ const appData = {
 
 Silcrow.patch(appData, '#app');
 ```
-
 ```html
 <div id="app">
   <input s-bind="user.profile.firstName:value">
@@ -271,8 +269,7 @@ Silcrow.patch(appData, '#app');
 </div>
 ```
 
-## Form Submission
-
+### Form Submission
 ```html
 <form id="form">
   <input name="title" s-bind="draft.title:value">
@@ -301,8 +298,7 @@ form.addEventListener('submit', async (e) => {
 </script>
 ```
 
-## Multi-Source Aggregation
-
+### Multi-Source Aggregation
 ```javascript
 const state = { users: [], stats: {} };
 
@@ -316,8 +312,7 @@ Promise.all([
 });
 ```
 
-## Polling
-
+### Polling
 ```javascript
 const update = Silcrow.stream('#status');
 
@@ -326,6 +321,7 @@ setInterval(async () => {
   update(data);
 }, 5000);
 ```
+
 ## Security
 
 - Blocks `__proto__`, `constructor`, `prototype` in paths
@@ -333,6 +329,10 @@ setInterval(async () => {
 - Validates templates (no `<script>`, no inline handlers)
 - Nested `s-list` not allowed
 
-## Bundle Size
+## License
 
-~4KB minified + gzipped
+MIT
+
+## Author
+
+Jagjeet Singh
