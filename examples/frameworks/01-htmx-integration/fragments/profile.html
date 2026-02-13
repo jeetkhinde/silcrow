@@ -1,0 +1,98 @@
+<div id="profile-fragment">
+  <style>
+    .profile-header {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+      display: flex;
+      gap: 30px;
+      align-items: center;
+    }
+
+    .profile-avatar {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      border: 4px solid #3498db;
+    }
+
+    .profile-info h2 {
+      font-size: 2rem;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+
+    .profile-role {
+      color: #3498db;
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+    }
+
+    .profile-email {
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    .profile-meta {
+      font-size: 0.9rem;
+      color: #999;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .stat-box {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .stat-box-value {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #3498db;
+      margin-bottom: 8px;
+    }
+
+    .stat-box-label {
+      color: #666;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+  </style>
+
+  <div class="profile-header">
+    <img class="profile-avatar" s-bind="user.avatar:src" alt="Avatar">
+    <div class="profile-info">
+      <h2 s-bind="user.name"></h2>
+      <div class="profile-role" s-bind="user.role"></div>
+      <div class="profile-email" s-bind="user.email"></div>
+      <div class="profile-meta">Member since <span s-bind="user.joined"></span></div>
+    </div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-box-value" s-bind="stats.projects"></div>
+      <div class="stat-box-label">Projects</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-box-value" s-bind="stats.contributions"></div>
+      <div class="stat-box-label">Contributions</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-box-value" s-bind="stats.followers"></div>
+      <div class="stat-box-label">Followers</div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,14 @@
+{
+  "name": "silcrow-htmx-example",
+  "version": "1.0.0",
+  "description": "HTMX + Silcrow multi-page app example",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["silcrow", "htmx", "integration"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

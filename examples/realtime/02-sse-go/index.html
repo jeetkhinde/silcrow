@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Ticker - Silcrow + Go SSE</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+      background: #0a0e27;
+      color: #fff;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 20px;
+      background: linear-gradient(135deg, #1a1f3a 0%, #2d3561 100%);
+      border-radius: 12px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(45deg, #00d4ff, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #8892b0;
+      font-size: 1.1rem;
+    }
+
+    .connection {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+    }
+
+    .stocks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .stock-card {
+      background: linear-gradient(135deg, #1a1f3a 0%, #252b4a 100%);
+      border: 1px solid #2d3561;
+      border-radius: 12px;
+      padding: 25px;
+      transition: all 0.3s ease;
+    }
+
+    .stock-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 212, 255, 0.2);
+      border-color: #00d4ff;
+    }
+
+    .stock-symbol {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #00d4ff;
+    }
+
+    .stock-price {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .stock-change {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .stock-change.positive {
+      background: rgba(0, 255, 136, 0.15);
+      color: #00ff88;
+    }
+
+    .stock-change.negative {
+      background: rgba(255, 68, 68, 0.15);
+      color: #ff4444;
+    }
+
+    .stock-meta {
+      display: flex;
+      justify-content: space-between;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.85rem;
+      color: #8892b0;
+    }
+
+    .last-update {
+      text-align: center;
+      color: #8892b0;
+      margin-top: 30px;
+      font-size: 0.9rem;
+    }
+
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .updating {
+      animation: flash 0.5s ease-in-out;
+    }
+  </style>
+</head>
+<body s-debug>
+  <div class="container">
+    <header>
+      <h1>📈 Live Stock Ticker</h1>
+      <p class="subtitle">Go + Server-Sent Events + Silcrow</p>
+      <div class="connection">
+        <span s-bind="status"></span>
+      </div>
+    </header>
+
+    <div class="stocks-grid" s-list="stocks">
+      <template>
+        <div class="stock-card">
+          <div class="stock-symbol" s-bind=".symbol"></div>
+          <div class="stock-price">$<span s-bind=".price"></span></div>
+          <div class="stock-change">
+            <span s-bind=".change"></span>
+            (<span s-bind=".changePercent"></span>%)
+          </div>
+          <div class="stock-meta">
+            <span>Vol: <span s-bind=".volume"></span></span>
+            <span s-bind=".timestamp"></span>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <div class="last-update">
+      Real-time updates every 500ms
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+
+  <script>
+    let state = {
+      status: 'Connecting...',
+      stocks: []
+    };
+
+    // Use Silcrow.stream for batched updates
+    const update = Silcrow.stream('body');
+
+    // Initial render
+    update(state);
+
+    // Connect to SSE
+    let eventSource;
+
+    function connectSSE() {
+      eventSource = new EventSource('/api/stocks');
+
+      eventSource.onopen = () => {
+        console.log('Connected to stock feed');
+        state.status = '🟢 Live';
+        update(state);
+      };
+
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.stocks) {
+          // Add 'key' property for Silcrow
+          state.stocks = data.stocks.map(stock => ({
+            key: stock.symbol,
+            ...stock
+          }));
+
+          state.status = '🟢 Live';
+          update(state);
+
+          // Update card styling based on change
+          state.stocks.forEach(stock => {
+            const card = document.querySelector(`[data-key="${stock.symbol}"]`);
+            if (card) {
+              const changeEl = card.querySelector('.stock-change');
+              if (changeEl) {
+                changeEl.className = stock.change >= 0 ? 'stock-change positive' : 'stock-change negative';
+              }
+
+              // Flash animation on update
+              card.classList.add('updating');
+              setTimeout(() => card.classList.remove('updating'), 500);
+            }
+          });
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+        state.status = '🔴 Disconnected';
+        update(state);
+
+        eventSource.close();
+        setTimeout(connectSSE, 3000);
+      };
+    }
+
+    connectSSE();
+
+    window.addEventListener('beforeunload', () => {
+      if (eventSource) eventSource.close();
+    });
+  </script>
+</body>
+</html>

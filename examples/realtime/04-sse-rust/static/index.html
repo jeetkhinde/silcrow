@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Metrics - Silcrow + Rust</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      color: #a0a0a0;
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+    }
+
+    .connection {
+      display: inline-block;
+      padding: 8px 16px;
+      background: rgba(255, 107, 107, 0.2);
+      border: 1px solid rgba(255, 107, 107, 0.4);
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-5px);
+      border-color: #ff6b6b;
+      box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+    }
+
+    .metric-label {
+      font-size: 0.9rem;
+      color: #a0a0a0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .metric-value {
+      font-size: 3rem;
+      font-weight: 700;
+      color: #ff6b6b;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .metric-unit {
+      font-size: 1.5rem;
+      color: #808080;
+      margin-left: 8px;
+    }
+
+    .metric-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 15px;
+    }
+
+    .metric-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff6b6b, #ee5a6f);
+      transition: width 0.5s ease;
+    }
+
+    .timestamp {
+      text-align: center;
+      color: #a0a0a0;
+      font-size: 0.95rem;
+      margin-top: 30px;
+    }
+
+    @keyframes glow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .live-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #ff6b6b;
+      border-radius: 50%;
+      margin-right: 8px;
+      animation: glow 2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body s-debug>
+  <div class="container">
+    <header>
+      <h1>⚡ Server Metrics</h1>
+      <p class="subtitle">Rust + Axum + Tokio + Silcrow</p>
+      <div class="connection">
+        <span class="live-indicator"></span>
+        <span s-bind="status"></span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- CPU Usage -->
+      <div class="metric-card">
+        <div class="metric-label">CPU Usage</div>
+        <div class="metric-value">
+          <span s-bind="cpu_usage"></span><span class="metric-unit">%</span>
+        </div>
+        <div class="metric-bar">
+          <div class="metric-bar-fill" id="cpuBar"></div>
+        </div>
+      </div>
+
+      <!-- Memory -->
+      <div class="metric-card">
+        <div class="metric-label">Memory Used</div>
+        <div class="metric-value">
+          <span s-bind="memory_mb"></span><span class="metric-unit">MB</span>
+        </div>
+        <div class="metric-bar">
+          <div class="metric-bar-fill" id="memBar"></div>
+        </div>
+      </div>
+
+      <!-- Disk I/O -->
+      <div class="metric-card">
+        <div class="metric-label">Disk I/O</div>
+        <div class="metric-value">
+          <span s-bind="disk_io"></span><span class="metric-unit">%</span>
+        </div>
+        <div class="metric-bar">
+          <div class="metric-bar-fill" id="diskBar"></div>
+        </div>
+      </div>
+
+      <!-- Network In -->
+      <div class="metric-card">
+        <div class="metric-label">Network In</div>
+        <div class="metric-value">
+          <span s-bind="network_in"></span><span class="metric-unit">KB/s</span>
+        </div>
+      </div>
+
+      <!-- Network Out -->
+      <div class="metric-card">
+        <div class="metric-label">Network Out</div>
+        <div class="metric-value">
+          <span s-bind="network_out"></span><span class="metric-unit">KB/s</span>
+        </div>
+      </div>
+
+      <!-- Active Connections -->
+      <div class="metric-card">
+        <div class="metric-label">Active Connections</div>
+        <div class="metric-value" s-bind="active_connections"></div>
+      </div>
+
+      <!-- Requests/sec -->
+      <div class="metric-card">
+        <div class="metric-label">Requests / sec</div>
+        <div class="metric-value" s-bind="requests_per_sec"></div>
+      </div>
+
+      <!-- Avg Response Time -->
+      <div class="metric-card">
+        <div class="metric-label">Avg Response Time</div>
+        <div class="metric-value">
+          <span s-bind="avg_response_time"></span><span class="metric-unit">ms</span>
+        </div>
+      </div>
+
+      <!-- Error Rate -->
+      <div class="metric-card">
+        <div class="metric-label">Error Rate</div>
+        <div class="metric-value">
+          <span s-bind="error_rate"></span><span class="metric-unit">%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="timestamp">
+      Last updated: <span s-bind="timestamp"></span>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+
+  <script>
+    let metrics = {
+      status: 'Connecting...',
+      cpu_usage: '0.0',
+      memory_mb: '0',
+      disk_io: '0.0',
+      network_in: '0',
+      network_out: '0',
+      active_connections: 0,
+      requests_per_sec: 0,
+      avg_response_time: 0,
+      error_rate: '0.0',
+      timestamp: new Date().toLocaleTimeString()
+    };
+
+    const update = Silcrow.stream('body');
+    update(metrics);
+
+    let eventSource;
+
+    function connectSSE() {
+      eventSource = new EventSource('/api/metrics');
+
+      eventSource.onopen = () => {
+        console.log('Connected to Rust SSE server');
+        metrics.status = 'LIVE';
+        update(metrics);
+      };
+
+      eventSource.onmessage = (event) => {
+        if (event.data === 'keep-alive') return;
+
+        const data = JSON.parse(event.data);
+
+        metrics = {
+          ...metrics,
+          ...data,
+          status: 'LIVE',
+          // Format numbers
+          cpu_usage: parseFloat(data.cpu_usage).toFixed(1),
+          disk_io: parseFloat(data.disk_io).toFixed(1),
+          error_rate: parseFloat(data.error_rate).toFixed(2),
+        };
+
+        update(metrics);
+
+        // Update progress bars
+        document.getElementById('cpuBar').style.width = `${data.cpu_usage}%`;
+        document.getElementById('memBar').style.width = `${(data.memory_mb / 16000) * 100}%`;
+        document.getElementById('diskBar').style.width = `${data.disk_io}%`;
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+        metrics.status = 'DISCONNECTED';
+        update(metrics);
+
+        eventSource.close();
+        setTimeout(connectSSE, 3000);
+      };
+    }
+
+    connectSSE();
+
+    window.addEventListener('beforeunload', () => {
+      if (eventSource) eventSource.close();
+    });
+  </script>
+</body>
+</html>

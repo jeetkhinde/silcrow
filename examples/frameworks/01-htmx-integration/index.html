@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTMX + Silcrow Integration</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 250px;
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .nav-item {
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: block;
+      color: white;
+      text-decoration: none;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .nav-item.active {
+      background: #3498db;
+    }
+
+    .main {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .header {
+      background: white;
+      padding: 20px 40px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 1.8rem;
+      color: #2c3e50;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .htmx-indicator {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #e3f2fd;
+      color: #1976d2;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body s-debug>
+  <div class="app">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="logo">🚀 HTMX + Silcrow</div>
+      <nav>
+        <a
+          href="#"
+          class="nav-item active"
+          hx-get="/fragments/dashboard"
+          hx-target="#content"
+          hx-swap="innerHTML"
+          hx-indicator=".htmx-indicator">
+          📊 Dashboard
+        </a>
+        <a
+          href="#"
+          class="nav-item"
+          hx-get="/fragments/profile"
+          hx-target="#content"
+          hx-swap="innerHTML"
+          hx-indicator=".htmx-indicator">
+          👤 Profile
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <header class="header">
+        <h1>Dashboard <span class="htmx-indicator"></span></h1>
+      </header>
+
+      <div id="content" class="content">
+        <!-- Initial content loaded by HTMX -->
+        <div hx-get="/fragments/dashboard" hx-trigger="load" hx-swap="outerHTML"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+  <!-- Silcrow -->
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+
+  <script>
+    // After HTMX loads a fragment, fetch and bind its data
+    document.body.addEventListener('htmx:afterSettle', async (event) => {
+      const target = event.detail.target;
+
+      // Determine which data to fetch based on fragment
+      let endpoint = null;
+      let dataRoot = null;
+
+      if (target.id === 'dashboard-fragment') {
+        endpoint = '/api/dashboard';
+        dataRoot = '#dashboard-fragment';
+      } else if (target.id === 'profile-fragment') {
+        endpoint = '/api/profile';
+        dataRoot = '#profile-fragment';
+      }
+
+      if (endpoint && dataRoot) {
+        try {
+          const response = await fetch(endpoint);
+          const data = await response.json();
+
+          // Patch data into the fragment
+          Silcrow.patch(data, dataRoot);
+
+          console.log(`Data patched for ${dataRoot}:`, data);
+        } catch (error) {
+          console.error('Error fetching data:', error);
+        }
+      }
+
+      // Update active nav item
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item === event.detail.elt) {
+          item.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

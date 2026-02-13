@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Activity Feed - Silcrow + Python</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      color: #1c1e21;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #65676b;
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+    }
+
+    .connection {
+      display: inline-block;
+      padding: 6px 12px;
+      background: #e7f3ff;
+      color: #1877f2;
+      border-radius: 15px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .connection.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .feed {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .feed-header {
+      padding: 20px;
+      border-bottom: 1px solid #e4e6eb;
+      font-weight: 600;
+      color: #1c1e21;
+      font-size: 1.1rem;
+    }
+
+    .activities {
+      list-style: none;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 16px 20px;
+      border-bottom: 1px solid #e4e6eb;
+      transition: background 0.2s;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .activity-item:hover {
+      background: #f7f8fa;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .activity-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-user {
+      font-weight: 600;
+      color: #1c1e21;
+      margin-right: 4px;
+    }
+
+    .activity-action {
+      color: #65676b;
+    }
+
+    .activity-time {
+      font-size: 0.85rem;
+      color: #8a8d91;
+      margin-top: 4px;
+    }
+
+    .empty-state {
+      padding: 60px 20px;
+      text-align: center;
+      color: #8a8d91;
+    }
+
+    .empty-icon {
+      font-size: 4rem;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .pulse {
+      animation: pulse 1s ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body s-debug>
+  <div class="container">
+    <header>
+      <h1>🔔 Activity Feed</h1>
+      <p class="subtitle">Python + FastAPI + Silcrow SSE</p>
+      <div class="connection" id="connectionStatus">
+        <span s-bind="status"></span>
+      </div>
+    </header>
+
+    <div class="feed">
+      <div class="feed-header">Recent Activity</div>
+
+      <ul class="activities" id="activityList" s-list="activities">
+        <template>
+          <li class="activity-item">
+            <div class="activity-icon" s-bind=".icon"></div>
+            <div class="activity-content">
+              <div>
+                <span class="activity-user" s-bind=".user"></span>
+                <span class="activity-action" s-bind=".action"></span>
+              </div>
+              <div class="activity-time" s-bind=".timestamp"></div>
+            </div>
+          </li>
+        </template>
+      </ul>
+
+      <div class="empty-state" id="emptyState" style="display: none;">
+        <div class="empty-icon">📭</div>
+        <div>No activity yet. Waiting for updates...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+
+  <script>
+    const MAX_ACTIVITIES = 20;  // Keep last 20 activities
+
+    let state = {
+      status: 'Connecting...',
+      activities: []
+    };
+
+    // Batched update function
+    const update = Silcrow.stream('body');
+
+    // Initial render
+    update(state);
+
+    let eventSource;
+
+    function connectSSE() {
+      eventSource = new EventSource('/api/activity');
+
+      eventSource.onopen = () => {
+        console.log('Connected to activity feed');
+        state.status = '🟢 Live';
+        document.getElementById('connectionStatus').className = 'connection connected';
+        update(state);
+      };
+
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        // Ignore connection message
+        if (data.status) return;
+
+        // Add new activity to the beginning
+        state.activities.unshift({
+          key: data.id,
+          icon: data.icon,
+          user: data.user,
+          action: data.action,
+          timestamp: data.timestamp,
+          type: data.type
+        });
+
+        // Keep only last MAX_ACTIVITIES
+        if (state.activities.length > MAX_ACTIVITIES) {
+          state.activities = state.activities.slice(0, MAX_ACTIVITIES);
+        }
+
+        update(state);
+
+        // Show/hide empty state
+        document.getElementById('emptyState').style.display =
+          state.activities.length === 0 ? 'block' : 'none';
+
+        // Pulse animation on new activity
+        const list = document.getElementById('activityList');
+        if (list.firstElementChild) {
+          list.firstElementChild.classList.add('pulse');
+          setTimeout(() => {
+            list.firstElementChild?.classList.remove('pulse');
+          }, 1000);
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+        state.status = '🔴 Disconnected';
+        document.getElementById('connectionStatus').className = 'connection';
+        update(state);
+
+        eventSource.close();
+        setTimeout(connectSSE, 3000);
+      };
+    }
+
+    connectSSE();
+
+    window.addEventListener('beforeunload', () => {
+      if (eventSource) eventSource.close();
+    });
+  </script>
+</body>
+</html>
