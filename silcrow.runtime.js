@@ -410,9 +410,9 @@
       for (const tpl of templates) {
         validatedTemplates.delete(tpl);
       }
-    }
+    },
     // NEW: Opt-in batching for high-frequency scenarios
-   stream: function (root) {
+    stream: function (root) {
       const element = resolveRoot(root);
       let pending = null;
       let scheduled = false;
@@ -428,6 +428,5 @@
         });
       };
     }
-
   };
 })();
