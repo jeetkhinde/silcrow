@@ -1,0 +1,16 @@
+{
+  "name": "silcrow-sse-nodejs-example",
+  "version": "1.0.0",
+  "description": "Real-time metrics dashboard using Silcrow and Server-Sent Events",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["silcrow", "sse", "real-time", "dashboard"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

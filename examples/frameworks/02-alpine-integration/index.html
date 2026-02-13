@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alpine.js + Silcrow Integration</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.2rem;
+      opacity: 0.9;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      margin-bottom: 30px;
+    }
+
+    .card h2 {
+      margin-bottom: 20px;
+      color: #333;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 12px;
+    }
+
+    .demo-section {
+      margin-bottom: 30px;
+    }
+
+    .demo-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .demo-label {
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Alpine-controlled tabs */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #eee;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      color: #666;
+      cursor: pointer;
+      font-weight: 500;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    /* Silcrow-bound product data */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .product-card {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+
+    .product-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    .product-img {
+      width: 100%;
+      height: 150px;
+      background: #f5f5f5;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      margin-bottom: 15px;
+    }
+
+    .product-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .product-price {
+      font-size: 1.3rem;
+      color: #667eea;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .product-stock {
+      font-size: 0.85rem;
+      color: #999;
+    }
+
+    /* Alpine-controlled modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .modal h3 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .modal-data {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .modal-data p {
+      margin-bottom: 8px;
+      color: #555;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+
+    .secondary-btn {
+      background: #e0e0e0;
+      color: #555;
+    }
+
+    .secondary-btn:hover {
+      background: #d0d0d0;
+    }
+
+    /* Counter demo */
+    .counter-demo {
+      text-align: center;
+      padding: 30px;
+      background: #f9f9f9;
+      border-radius: 8px;
+    }
+
+    .counter-value {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #667eea;
+      margin: 20px 0;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body s-debug>
+  <div class="container">
+    <div class="header">
+      <h1>🏔️ Alpine.js + Silcrow</h1>
+      <p>Alpine handles UI interactions, Silcrow binds server data</p>
+    </div>
+
+    <!-- Demo 1: Alpine tabs + Silcrow data binding -->
+    <div class="card" x-data="{ activeTab: 'electronics' }" id="products">
+      <h2>📦 Product Catalog</h2>
+      <p style="color: #666; margin-bottom: 20px;">
+        Alpine.js controls tabs, Silcrow binds product data from API
+      </p>
+
+      <div class="tabs">
+        <button
+          class="tab"
+          :class="{ 'active': activeTab === 'electronics' }"
+          @click="activeTab = 'electronics'; loadProducts('electronics')">
+          Electronics
+        </button>
+        <button
+          class="tab"
+          :class="{ 'active': activeTab === 'clothing' }"
+          @click="activeTab = 'clothing'; loadProducts('clothing')">
+          Clothing
+        </button>
+        <button
+          class="tab"
+          :class="{ 'active': activeTab === 'books' }"
+          @click="activeTab = 'books'; loadProducts('books')">
+          Books
+        </button>
+      </div>
+
+      <div class="product-grid" s-list="products">
+        <template>
+          <div class="product-card">
+            <div class="product-img" s-bind=".icon"></div>
+            <div class="product-name" s-bind=".name"></div>
+            <div class="product-price">$<span s-bind=".price"></span></div>
+            <div class="product-stock"><span s-bind=".stock"></span> in stock</div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Demo 2: Alpine counter + Silcrow display -->
+    <div class="card" x-data="{ count: 0 }">
+      <h2>🔢 Counter Demo</h2>
+      <p style="color: #666; margin-bottom: 20px;">
+        Alpine.js manages counter state, updates shared with Silcrow
+      </p>
+
+      <div class="counter-demo">
+        <!-- Alpine displays count -->
+        <div class="counter-value" x-text="count"></div>
+
+        <div class="button-group">
+          <button @click="count--">Decrement</button>
+          <button @click="count = 0" class="secondary-btn">Reset</button>
+          <button @click="count++">Increment</button>
+        </div>
+
+        <!-- Sync to Silcrow-bound element -->
+        <div style="margin-top: 30px; padding: 20px; background: white; border-radius: 8px;">
+          <p style="color: #666; margin-bottom: 10px;">Silcrow-bound value:</p>
+          <div style="font-size: 2rem; font-weight: 700; color: #764ba2;" s-bind="counter"></div>
+        </div>
+
+        <button
+          @click="syncCounter(count)"
+          style="margin-top: 20px; background: #764ba2;">
+          Sync to Silcrow
+        </button>
+      </div>
+    </div>
+
+    <!-- Demo 3: Alpine modal + Silcrow data -->
+    <div class="card" x-data="{ showModal: false }">
+      <h2>🎯 Modal with Server Data</h2>
+      <p style="color: #666; margin-bottom: 20px;">
+        Alpine.js controls modal visibility, Silcrow binds server data
+      </p>
+
+      <button @click="showModal = true; loadUserData()">
+        Show User Profile
+      </button>
+
+      <!-- Alpine-controlled modal -->
+      <div
+        x-show="showModal"
+        x-cloak
+        class="modal-backdrop"
+        @click.self="showModal = false">
+        <div class="modal">
+          <h3>User Profile</h3>
+          <div class="modal-data" id="userData">
+            <p><strong>Name:</strong> <span s-bind="name"></span></p>
+            <p><strong>Email:</strong> <span s-bind="email"></span></p>
+            <p><strong>Role:</strong> <span s-bind="role"></span></p>
+            <p><strong>Company:</strong> <span s-bind="company"></span></p>
+          </div>
+          <button @click="showModal = false" class="secondary-btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alpine.js -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+
+  <!-- Silcrow -->
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+
+  <script>
+    // Mock API data
+    const mockData = {
+      electronics: [
+        { key: 1, name: 'Laptop Pro', price: 1299, stock: 12, icon: '💻' },
+        { key: 2, name: 'Wireless Mouse', price: 49, stock: 45, icon: '🖱️' },
+        { key: 3, name: 'Mechanical Keyboard', price: 129, stock: 23, icon: '⌨️' }
+      ],
+      clothing: [
+        { key: 4, name: 'Designer Jacket', price: 199, stock: 8, icon: '🧥' },
+        { key: 5, name: 'Running Shoes', price: 89, stock: 15, icon: '👟' },
+        { key: 6, name: 'Cotton T-Shirt', price: 29, stock: 50, icon: '👕' }
+      ],
+      books: [
+        { key: 7, name: 'JavaScript Guide', price: 45, stock: 30, icon: '📚' },
+        { key: 8, name: 'Design Patterns', price: 55, stock: 18, icon: '📖' },
+        { key: 9, name: 'Clean Code', price: 42, stock: 25, icon: '📕' }
+      ]
+    };
+
+    let productState = { products: [] };
+
+    // Load products for selected category
+    window.loadProducts = function(category) {
+      productState.products = mockData[category] || [];
+      Silcrow.patch(productState, '#products');
+    };
+
+    // Sync counter to Silcrow
+    window.syncCounter = function(value) {
+      Silcrow.patch({ counter: value }, 'body');
+    };
+
+    // Load user data
+    window.loadUserData = function() {
+      const userData = {
+        name: 'Sarah Martinez',
+        email: 'sarah.martinez@example.com',
+        role: 'Product Designer',
+        company: 'Tech Innovations Inc.'
+      };
+      Silcrow.patch(userData, '#userData');
+    };
+
+    // Initial load
+    loadProducts('electronics');
+  </script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
+</body>
+</html>

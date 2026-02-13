@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vanilla SPA with Routing - Silcrow</title>
+  <style>
+    * {margin: 0; padding: 0; box-sizing: border-box;}
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+    }
+
+    .app {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: #1e293b;
+      color: white;
+      padding: 30px 20px;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 40px;
+    }
+
+    nav a {
+      display: block;
+      padding: 12px 16px;
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: all 0.2s;
+    }
+
+    nav a:hover {
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+
+    nav a.active {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .main {
+      flex: 1;
+      padding: 40px;
+    }
+
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #1e293b;
+      margin-bottom: 30px;
+    }
+
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin-bottom: 24px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 25px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
+
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .product-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+
+    .product-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    .product-img {
+      height: 150px;
+      background: #f3f4f6;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .product-name {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+
+    .product-price {
+      font-size: 1.5rem;
+      color: #3b82f6;
+      font-weight: 700;
+    }
+
+    .settings-form {
+      max-width: 600px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
+  </style>
+</head>
+<body s-debug>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="logo">📱 Vanilla SPA</div>
+      <nav id="nav">
+        <a href="/" data-route="/">🏠 Dashboard</a>
+        <a href="/products" data-route="/products">📦 Products</a>
+        <a href="/settings" data-route="/settings">⚙️ Settings</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div id="app"></div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+
+  <script>
+    // Simple router
+    class Router {
+      constructor() {
+        this.routes = {};
+        this.currentRoute = null;
+
+        window.addEventListener('popstate', () => this.handleRoute());
+        document.addEventListener('click', (e) => {
+          if (e.target.matches('[data-route]')) {
+            e.preventDefault();
+            this.navigate(e.target.getAttribute('data-route'));
+          }
+        });
+      }
+
+      route(path, handler) {
+        this.routes[path] = handler;
+        return this;
+      }
+
+      navigate(path) {
+        window.history.pushState({}, '', path);
+        this.handleRoute();
+      }
+
+      handleRoute() {
+        const path = window.location.pathname;
+        const handler = this.routes[path] || this.routes['/'];
+
+        // Update active nav
+        document.querySelectorAll('[data-route]').forEach(el => {
+          el.classList.toggle('active', el.getAttribute('data-route') === path);
+        });
+
+        if (handler) {
+          this.currentRoute = path;
+          handler();
+        }
+      }
+
+      start() {
+        this.handleRoute();
+      }
+    }
+
+    // Create router
+    const router = new Router();
+
+    // Dashboard page
+    router.route('/', () => {
+      document.getElementById('app').innerHTML = `
+        <div class="page">
+          <h1>Dashboard</h1>
+          <div class="stats-grid" s-list="stats">
+            <template>
+              <div class="stat-card">
+                <div class="stat-value" s-bind=".value"></div>
+                <div class="stat-label" s-bind=".label"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+      `;
+
+      // Simulate API call
+      setTimeout(() => {
+        Silcrow.patch({
+          stats: [
+            { key: 1, value: '1,247', label: 'Total Users' },
+            { key: 2, value: '89', label: 'Active Now' },
+            { key: 3, value: '$45,230', label: 'Revenue' },
+            { key: 4, value: '12.5%', label: 'Growth' }
+          ]
+        }, '#app');
+      }, 100);
+    });
+
+    // Products page
+    router.route('/products', () => {
+      document.getElementById('app').innerHTML = `
+        <div class="page">
+          <h1>Products</h1>
+          <div class="products-grid" s-list="products">
+            <template>
+              <div class="product-card">
+                <div class="product-img" s-bind=".icon"></div>
+                <div class="product-name" s-bind=".name"></div>
+                <div class="product-price">$<span s-bind=".price"></span></div>
+              </div>
+            </template>
+          </div>
+        </div>
+      `;
+
+      // Simulate API call
+      setTimeout(() => {
+        Silcrow.patch({
+          products: [
+            { key: 1, name: 'Laptop Pro', price: '1,299', icon: '💻' },
+            { key: 2, name: 'Wireless Mouse', price: '49', icon: '🖱️' },
+            { key: 3, name: 'Mechanical Keyboard', price: '129', icon: '⌨️' },
+            { key: 4, name: 'USB-C Hub', price: '79', icon: '🔌' },
+            { key: 5, name: 'Webcam HD', price: '149', icon: '📹' },
+            { key: 6, name: 'Headphones', price: '199', icon: '🎧' }
+          ]
+        }, '#app');
+      }, 100);
+    });
+
+    // Settings page
+    router.route('/settings', () => {
+      document.getElementById('app').innerHTML = `
+        <div class="page">
+          <h1>Settings</h1>
+          <div class="card">
+            <form class="settings-form" onsubmit="saveSettings(event)">
+              <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" s-bind="settings.name:value">
+              </div>
+
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" s-bind="settings.email:value">
+              </div>
+
+              <div class="form-group">
+                <label>Theme</label>
+                <select s-bind="settings.theme:value">
+                  <option value="light">Light</option>
+                  <option value="dark">Dark</option>
+                  <option value="auto">Auto</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" s-bind="settings.notifications:checked">
+                  Enable email notifications
+                </label>
+              </div>
+
+              <button type="submit">Save Changes</button>
+            </form>
+          </div>
+        </div>
+      `;
+
+      // Load settings
+      setTimeout(() => {
+        Silcrow.patch({
+          settings: {
+            name: 'Alex Thompson',
+            email: 'alex@example.com',
+            theme: 'dark',
+            notifications: true
+          }
+        }, '#app');
+      }, 100);
+    });
+
+    // Save settings handler
+    window.saveSettings = function(e) {
+      e.preventDefault();
+      alert('Settings saved! (This is a demo)');
+    };
+
+    // Start router
+    router.start();
+  </script>
+</body>
+</html>

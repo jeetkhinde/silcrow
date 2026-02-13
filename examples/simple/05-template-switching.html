@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Template Switching - Silcrow Example</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    h1 {
+      margin-top: 0;
+      color: #333;
+    }
+    .info {
+      background: #e3f2fd;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #1976d2;
+    }
+    .info code {
+      background: rgba(0,0,0,0.1);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 13px;
+    }
+    .controls {
+      margin-bottom: 30px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button.secondary {
+      background: #2196F3;
+    }
+    button.secondary:hover {
+      background: #0b7dda;
+    }
+
+    /* Timeline Styles */
+    .timeline {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    /* Post Template */
+    .post-item {
+      display: flex;
+      gap: 15px;
+      padding: 20px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      background: #fafafa;
+    }
+    .post-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #ddd;
+    }
+    .post-content {
+      flex: 1;
+    }
+    .post-author {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    .post-text {
+      color: #555;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .post-meta {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* Photo Template */
+    .photo-item {
+      padding: 0;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .photo-img {
+      width: 100%;
+      height: 300px;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-caption {
+      padding: 15px;
+      background: white;
+    }
+    .photo-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    .photo-desc {
+      color: #666;
+      font-size: 14px;
+    }
+
+    /* Video Template */
+    .video-item {
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .video-thumbnail {
+      width: 100%;
+      height: 250px;
+      object-fit: cover;
+      display: block;
+    }
+    .video-info {
+      padding: 15px;
+      background: #1a1a1a;
+      color: white;
+    }
+    .video-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .video-channel {
+      font-size: 13px;
+      color: #aaa;
+      margin-bottom: 5px;
+    }
+    .video-stats {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* Ad Template */
+    .ad-item {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .ad-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .ad-desc {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 20px;
+    }
+    .ad-cta {
+      display: inline-block;
+      background: white;
+      color: #667eea;
+      padding: 12px 30px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body s-debug>
+  <div class="card">
+    <h1>Dynamic Template Switching</h1>
+
+    <div class="info">
+      <strong>What this demonstrates:</strong> Multiple templates for a single list,
+      switched dynamically using <code>key#templateId</code> syntax. Different item types
+      (posts, photos, videos, ads) render with appropriate templates.
+    </div>
+
+    <div class="controls">
+      <button onclick="loadMixedFeed()">Load Mixed Feed</button>
+      <button class="secondary" onclick="loadPostsOnly()">Posts Only</button>
+      <button class="secondary" onclick="loadPhotosOnly()">Photos Only</button>
+      <button onclick="clearFeed()">Clear</button>
+    </div>
+
+    <ul class="timeline" s-list="items">
+      <!-- Default template for posts -->
+      <template id="post">
+        <li class="post-item">
+          <img class="post-avatar" s-bind=".avatar:src" alt="">
+          <div class="post-content">
+            <div class="post-author" s-bind=".author"></div>
+            <div class="post-text" s-bind=".text"></div>
+            <div class="post-meta" s-bind=".timestamp"></div>
+          </div>
+        </li>
+      </template>
+
+      <!-- Photo template -->
+      <template id="photo">
+        <li class="photo-item">
+          <img class="photo-img" s-bind=".url:src" alt="">
+          <div class="photo-caption">
+            <div class="photo-title" s-bind=".title"></div>
+            <div class="photo-desc" s-bind=".description"></div>
+          </div>
+        </li>
+      </template>
+
+      <!-- Video template -->
+      <template id="video">
+        <li class="video-item">
+          <img class="video-thumbnail" s-bind=".thumbnail:src" alt="">
+          <div class="video-info">
+            <div class="video-title" s-bind=".title"></div>
+            <div class="video-channel" s-bind=".channel"></div>
+            <div class="video-stats" s-bind=".views"></div>
+          </div>
+        </li>
+      </template>
+
+      <!-- Ad template -->
+      <template id="ad">
+        <li class="ad-item">
+          <div class="ad-title" s-bind=".headline"></div>
+          <div class="ad-desc" s-bind=".description"></div>
+          <a class="ad-cta" s-bind=".url:href" target="_blank">
+            <span s-bind=".cta"></span>
+          </a>
+        </li>
+      </template>
+    </ul>
+
+    <div id="emptyState" style="text-align: center; padding: 60px; color: #999; display: none;">
+      No items to display. Load a feed above!
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+
+  <script>
+    let feedData = {
+      items: []
+    };
+
+    function render() {
+      Silcrow.patch(feedData, 'body');
+      document.getElementById('emptyState').style.display =
+        feedData.items.length === 0 ? 'block' : 'none';
+    }
+
+    function loadMixedFeed() {
+      feedData.items = [
+        {
+          key: 'post#1',  // Uses 'post' template
+          author: 'Sarah Chen',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+          text: 'Just shipped our new feature using Silcrow! The dynamic template switching makes building feeds so much easier.',
+          timestamp: '2 hours ago'
+        },
+        {
+          key: 'photo#1',  // Uses 'photo' template
+          title: 'Golden Gate Bridge at Sunset',
+          description: 'Captured this stunning view yesterday evening. The colors were incredible!',
+          url: 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&h=400&fit=crop'
+        },
+        {
+          key: 'post#2',
+          author: 'Marcus Lee',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus',
+          text: 'Anyone else excited about the new Silcrow release? The template switching feature is a game changer.',
+          timestamp: '4 hours ago'
+        },
+        {
+          key: 'ad#1',  // Uses 'ad' template
+          headline: 'Build Faster with Silcrow',
+          description: 'The minimalist DOM patching library that just works',
+          url: 'https://github.com/jeetkhinde/silcrow',
+          cta: 'Learn More'
+        },
+        {
+          key: 'video#1',  // Uses 'video' template
+          title: 'Introduction to Modern Web Development',
+          channel: 'Tech Academy',
+          thumbnail: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&h=400&fit=crop',
+          views: '1.2M views • 3 days ago'
+        },
+        {
+          key: 'photo#2',
+          title: 'Mountain Lake Reflection',
+          description: 'Early morning hike rewards. Nature is the best designer.',
+          url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=400&fit=crop'
+        },
+        {
+          key: 'post#3',
+          author: 'Emily Rodriguez',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emily',
+          text: 'Pro tip: Use template switching when you have heterogeneous data in a single list. Much cleaner than conditional rendering!',
+          timestamp: '1 day ago'
+        }
+      ];
+      render();
+    }
+
+    function loadPostsOnly() {
+      feedData.items = [
+        {
+          key: 'post#10',
+          author: 'Alex Kim',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+          text: 'Working on a new project and Silcrow is making state management so simple.',
+          timestamp: '30 minutes ago'
+        },
+        {
+          key: 'post#11',
+          author: 'Jordan Taylor',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jordan',
+          text: 'The best part about Silcrow? No build step required. Just include the script and go!',
+          timestamp: '1 hour ago'
+        },
+        {
+          key: 'post#12',
+          author: 'Sam Patel',
+          avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sam',
+          text: 'Finally moved away from heavy frameworks. Silcrow + vanilla JS is all you need.',
+          timestamp: '3 hours ago'
+        }
+      ];
+      render();
+    }
+
+    function loadPhotosOnly() {
+      feedData.items = [
+        {
+          key: 'photo#10',
+          title: 'Urban Architecture',
+          description: 'Modern building design in downtown',
+          url: 'https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=800&h=400&fit=crop'
+        },
+        {
+          key: 'photo#11',
+          title: 'Coastal Sunrise',
+          description: 'Started the day right with this view',
+          url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=400&fit=crop'
+        },
+        {
+          key: 'photo#12',
+          title: 'Forest Path',
+          description: 'Lost in the woods, found peace',
+          url: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=400&fit=crop'
+        }
+      ];
+      render();
+    }
+
+    function clearFeed() {
+      feedData.items = [];
+      render();
+    }
+
+    // Initial load
+    loadMixedFeed();
+  </script>
+</body>
+</html>

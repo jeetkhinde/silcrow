@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Optimistic Updates with Rollback - Silcrow</title>
+  <style>
+    * {margin: 0; padding: 0; box-sizing: border-box;}
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: white;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(45deg, #ec4899, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 24px;
+      border: 1px solid #334155;
+    }
+
+    .card h2 {
+      margin-bottom: 20px;
+      color: #f1f5f9;
+    }
+
+    .todo-input {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .todo-input input {
+      flex: 1;
+      padding: 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      color: white;
+      font-size: 14px;
+    }
+
+    .todo-input button {
+      padding: 12px 24px;
+      background: #ec4899;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .todo-input button:hover {
+      background: #db2777;
+    }
+
+    .todo-list {
+      list-style: none;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      transition: all 0.2s;
+    }
+
+    .todo-item.pending {
+      opacity: 0.6;
+      border-color: #fbbf24;
+    }
+
+    .todo-item.failed {
+      opacity: 0.4;
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .todo-checkbox {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    .todo-text {
+      flex: 1;
+      color: #e2e8f0;
+    }
+
+    .todo-item.completed .todo-text {
+      text-decoration: line-through;
+      color: #64748b;
+    }
+
+    .todo-status {
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .todo-status.synced {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .todo-status.pending {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+
+    .todo-status.failed {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .todo-delete {
+      background: #374151;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .todo-delete:hover {
+      background: #4b5563;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .controls button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .simulate-failure {
+      background: #ef4444;
+      color: white;
+    }
+
+    .simulate-failure:hover {
+      background: #dc2626;
+    }
+
+    .simulate-success {
+      background: #22c55e;
+      color: white;
+    }
+
+    .simulate-success:hover {
+      background: #16a34a;
+    }
+
+    .info-box {
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid #8b5cf6;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-size: 0.9rem;
+      color: #c4b5fd;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: 8px;
+      font-weight: 500;
+      animation: slideIn 0.3s ease-out;
+      z-index: 1000;
+    }
+
+    .toast.success {
+      background: #22c55e;
+      color: white;
+    }
+
+    .toast.error {
+      background: #ef4444;
+      color: white;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body s-debug>
+  <div class="container">
+    <div class="header">
+      <h1>⚡ Optimistic Updates</h1>
+      <p>Instant UI updates with automatic rollback on failure</p>
+    </div>
+
+    <div class="card">
+      <div class="info-box">
+        <strong>How it works:</strong> When you add, complete, or delete a todo,
+        the UI updates instantly (optimistic). If the server request fails,
+        changes automatically roll back.
+      </div>
+
+      <div class="todo-input">
+        <input
+          type="text"
+          id="newTodo"
+          placeholder="What needs to be done?"
+          onkeypress="if(event.key==='Enter') addTodo()">
+        <button onclick="addTodo()">Add Todo</button>
+      </div>
+
+      <ul class="todo-list" s-list="todos">
+        <template>
+          <li class="todo-item">
+            <input
+              type="checkbox"
+              class="todo-checkbox"
+              s-bind=".completed:checked"
+              onchange="toggleTodo(this)">
+            <span class="todo-text" s-bind=".title"></span>
+            <span class="todo-status" s-bind=".syncStatus"></span>
+            <button class="todo-delete" onclick="deleteTodo(this)">Delete</button>
+          </li>
+        </template>
+      </ul>
+
+      <div id="emptyState" style="text-align: center; padding: 60px; color: #64748b;">
+        No todos yet. Add one above!
+      </div>
+
+      <div class="controls">
+        <button class="simulate-failure" onclick="toggleFailureMode()">
+          <span id="failureBtn">🔴 Enable Failure Mode</span>
+        </button>
+        <button class="simulate-success" onclick="clearAll()">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+
+  <script>
+    let state = {
+      todos: [],
+      nextId: 1
+    };
+
+    let simulateFailure = false;
+
+    function render() {
+      Silcrow.patch(state, 'body');
+
+      // Update empty state
+      document.getElementById('emptyState').style.display =
+        state.todos.length === 0 ? 'block' : 'none';
+
+      // Update item classes
+      state.todos.forEach(todo => {
+        const item = document.querySelector(`[data-key="${todo.key}"]`);
+        if (item) {
+          item.className = 'todo-item' +
+            (todo.completed ? ' completed' : '') +
+            (todo.syncStatus === 'pending' ? ' pending' : '') +
+            (todo.syncStatus === 'failed' ? ' failed' : '');
+        }
+      });
+    }
+
+    // Simulate API call
+    function mockApiCall(delay = 1000) {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          if (simulateFailure) {
+            reject(new Error('Simulated API failure'));
+          } else {
+            resolve({ success: true });
+          }
+        }, delay);
+      });
+    }
+
+    async function addTodo() {
+      const input = document.getElementById('newTodo');
+      const title = input.value.trim();
+
+      if (!title) return;
+
+      const newTodo = {
+        key: state.nextId++,
+        title,
+        completed: false,
+        syncStatus: 'pending'
+      };
+
+      // Optimistic update
+      const previousState = JSON.parse(JSON.stringify(state.todos));
+      state.todos.push(newTodo);
+      input.value = '';
+      render();
+
+      // Try to sync with server
+      try {
+        await mockApiCall();
+        newTodo.syncStatus = 'synced';
+        render();
+        showToast('Todo added!', 'success');
+      } catch (error) {
+        // Rollback on failure
+        state.todos = previousState;
+        render();
+        showToast('Failed to add todo. Rolled back.', 'error');
+      }
+    }
+
+    async function toggleTodo(checkbox) {
+      const item = checkbox.closest('[data-key]');
+      const key = parseInt(item.dataset.key);
+      const todo = state.todos.find(t => t.key === key);
+
+      if (!todo) return;
+
+      // Save previous state for rollback
+      const previousCompleted = todo.completed;
+      const previousSyncStatus = todo.syncStatus;
+
+      // Optimistic update
+      todo.completed = checkbox.checked;
+      todo.syncStatus = 'pending';
+      render();
+
+      // Try to sync
+      try {
+        await mockApiCall(500);
+        todo.syncStatus = 'synced';
+        render();
+        showToast('Todo updated!', 'success');
+      } catch (error) {
+        // Rollback
+        todo.completed = previousCompleted;
+        todo.syncStatus = 'failed';
+        render();
+        showToast('Failed to update. Rolled back.', 'error');
+
+        // Reset checkbox
+        checkbox.checked = previousCompleted;
+      }
+    }
+
+    async function deleteTodo(btn) {
+      const item = btn.closest('[data-key]');
+      const key = parseInt(item.dataset.key);
+      const index = state.todos.findIndex(t => t.key === key);
+
+      if (index === -1) return;
+
+      // Save for rollback
+      const deletedTodo = state.todos[index];
+
+      // Optimistic delete
+      state.todos.splice(index, 1);
+      render();
+
+      // Try to sync
+      try {
+        await mockApiCall(500);
+        showToast('Todo deleted!', 'success');
+      } catch (error) {
+        // Rollback - restore the todo
+        state.todos.splice(index, 0, deletedTodo);
+        deletedTodo.syncStatus = 'failed';
+        render();
+        showToast('Failed to delete. Rolled back.', 'error');
+      }
+    }
+
+    function toggleFailureMode() {
+      simulateFailure = !simulateFailure;
+      const btn = document.getElementById('failureBtn');
+      btn.textContent = simulateFailure
+        ? '🟢 Disable Failure Mode'
+        : '🔴 Enable Failure Mode';
+
+      showToast(
+        simulateFailure ? 'Failure mode ON' : 'Failure mode OFF',
+        simulateFailure ? 'error' : 'success'
+      );
+    }
+
+    function clearAll() {
+      state.todos = [];
+      render();
+    }
+
+    function showToast(message, type) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.remove();
+      }, 3000);
+    }
+
+    // Initial render
+    render();
+
+    // Add some demo todos
+    state.todos = [
+      { key: state.nextId++, title: 'Learn Silcrow', completed: true, syncStatus: 'synced' },
+      { key: state.nextId++, title: 'Build optimistic UI', completed: false, syncStatus: 'synced' },
+      { key: state.nextId++, title: 'Deploy to production', completed: false, syncStatus: 'synced' }
+    ];
+    render();
+  </script>
+</body>
+</html>
