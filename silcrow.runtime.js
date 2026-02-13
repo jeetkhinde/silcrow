@@ -411,7 +411,7 @@
         validatedTemplates.delete(tpl);
       }
     },
-    // NEW: Opt-in batching for high-frequency scenarios
+    // NEW: Opt-in batching for high-frequency scenarios.
     stream: function (root) {
       const element = resolveRoot(root);
       let pending = null;
