@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,16 +13,19 @@
       padding: 20px;
       background: #f5f5f5;
     }
+
     .card {
       background: white;
       padding: 30px;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
+
     h1 {
       margin-top: 0;
       color: #333;
     }
+
     .info {
       background: #e3f2fd;
       padding: 15px;
@@ -30,11 +34,13 @@
       font-size: 14px;
       color: #1976d2;
     }
+
     .todo-input {
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
     }
+
     .todo-input input {
       flex: 1;
       padding: 10px;
@@ -42,6 +48,7 @@
       border-radius: 4px;
       font-size: 14px;
     }
+
     .todo-input button {
       background: #4CAF50;
       color: white;
@@ -51,14 +58,17 @@
       cursor: pointer;
       font-weight: 500;
     }
+
     .todo-input button:hover {
       background: #45a049;
     }
+
     .todo-list {
       list-style: none;
       padding: 0;
       margin: 0;
     }
+
     .todo-item {
       display: flex;
       align-items: center;
@@ -70,23 +80,28 @@
       background: #fafafa;
       transition: background 0.2s;
     }
+
     .todo-item:hover {
       background: #f0f0f0;
     }
+
     .todo-checkbox {
       width: 20px;
       height: 20px;
       cursor: pointer;
     }
+
     .todo-title {
       flex: 1;
       font-size: 14px;
       color: #333;
     }
+
     .todo-item[data-completed="true"] .todo-title {
       text-decoration: line-through;
       color: #999;
     }
+
     .todo-delete {
       background: #f44336;
       color: white;
@@ -96,19 +111,23 @@
       cursor: pointer;
       font-size: 12px;
     }
+
     .todo-delete:hover {
       background: #da190b;
     }
+
     .empty-state {
       text-align: center;
       padding: 40px;
       color: #999;
     }
+
     .controls {
       display: flex;
       gap: 10px;
       margin-top: 20px;
     }
+
     .controls button {
       flex: 1;
       background: #2196F3;
@@ -119,11 +138,13 @@
       cursor: pointer;
       font-size: 13px;
     }
+
     .controls button:hover {
       background: #0b7dda;
     }
   </style>
 </head>
+
 <body s-debug>
   <div class="card">
     <h1>Simple List Rendering</h1>
@@ -134,10 +155,7 @@
     </div>
 
     <div class="todo-input">
-      <input
-        type="text"
-        id="newTodo"
-        placeholder="What needs to be done?"
+      <input type="text" id="newTodo" placeholder="What needs to be done?"
         onkeypress="if(event.key==='Enter') addTodo()">
       <button onclick="addTodo()">Add Todo</button>
     </div>
@@ -145,10 +163,7 @@
     <ul id="todoList" class="todo-list" s-list="todos">
       <template>
         <li class="todo-item" data-completed="false">
-          <input
-            type="checkbox"
-            class="todo-checkbox"
-            s-bind=".completed:checked">
+          <input type="checkbox" class="todo-checkbox" s-bind=".completed:checked">
           <span class="todo-title" s-bind=".title"></span>
           <button class="todo-delete" onclick="deleteTodo(this)">Delete</button>
         </li>
@@ -165,7 +180,7 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@master/silcrow.runtime.js"></script>
 
   <script>
     let nextId = 1;
@@ -216,9 +231,9 @@
     function loadSampleData() {
       nextId = 4;
       state.todos = [
-        { key: 1, title: 'Read Silcrow documentation', completed: true },
-        { key: 2, title: 'Build a real-time dashboard', completed: false },
-        { key: 3, title: 'Deploy to production', completed: false }
+        {key: 1, title: 'Read Silcrow documentation', completed: true},
+        {key: 2, title: 'Build a real-time dashboard', completed: false},
+        {key: 3, title: 'Deploy to production', completed: false}
       ];
       render();
     }
@@ -246,4 +261,5 @@
     render();
   </script>
 </body>
+
 </html>
