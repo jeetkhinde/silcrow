@@ -20,7 +20,7 @@ npm install silcrow
 
 Or use CDN:
 ```html
-<script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow_runtime.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/jeetkhinde/silcrow@1.0.0/silcrow.runtime.js"></script>
 ```
 
 ## Usage
